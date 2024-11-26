@@ -52,17 +52,16 @@ def process_cve_data(input_excel, output_excel):
         cvss4_score = CVSS4(row['CVSS4.0'])
         cvss3_score = CVSS3( f"CVSS:3.0/{row['Unnamed: 11']}")
         #тут дожен быть перевод из CVSS4 -> OWASP
-        owaps_vector = OWAPS.create_vector()
+        #owaps_vector = OWAPS.create_vector()
 
         epss_data = fetch_epss_data(cve_id)
-        owaps_score = OWAPS.get_likelihood_factor_selenium(owaps_vector)
+        owaps_score = OWAPS.calculate_risk_owaps()
         # Собираем данные в один словарь
         result_row = {
             'CWE': row.get('Unnamed: 24', None),  # Замените на название столбца CWE
             'CVE_filtered': cve_id,
             'CVSS3.1': row.get('Unnamed: 11', None),  # Замените на название столбца CVSS 3.0
             'CVSS4.0': row.get('CVSS4.0', None),
-            'OWAPS' : owaps_vector,
             'EPSS_Score': epss_data.get('epss', None),
             'EPSS_Percentile': epss_data.get('percentile', None),
             'Calc CVSS3.1': cvss3_score.base_score,
