@@ -1,11 +1,14 @@
 import pandas as pd
 import cvss_gen_exel
 import EPSSandCVSSoutput
+import time
 
 input_file = './input/vullist.xlsx'
 output_file = './input/output_table.xlsx'
 filter_file = './input/cwe_to_cve_filtered.xlsx'
 final_exel = './out/cwe_with_epss_cvss.xlsx'
+
+start_time = time.time()
 
 # Чтение Excel файла в DataFrame
 df = pd.read_excel(input_file)
@@ -27,3 +30,4 @@ print(f"Найденные строки сохранены в '{output_file}'")
 
 cvss_gen_exel.cvss_gen_exel(cwe_codes)
 EPSSandCVSSoutput.process_cve_data(filter_file,final_exel)  # <- добавление фунционала вот сюда
+print("--- %s seconds ---" % (time.time() - start_time))
