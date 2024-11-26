@@ -13,3 +13,5 @@ pip install -r requirements.txt
 3. Запускаем скрипт 
 4. Результат работы скрипта находится в папке out
 ![](data/Screenshot_3.png)
+5. Итоговая тааблица на скрине ниже
+![](data/Screenshot_4.png)
