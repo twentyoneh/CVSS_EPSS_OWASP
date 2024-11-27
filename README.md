@@ -11,11 +11,11 @@
 ```bash
 pip install -r requirements.txt
 ```
+![](data/Screenshot_1.png)
 ЖДЁМ ЗАВЕРШЕНИЯ УСТАНОВКИ! (В ТЕРМИНАЛ МОЖНО БУДЕТ ПИСАТЬ И БУДЕТ СИМВОЛ > )
 ```bash
 (.venv) PS C:\Users\twentyoneh\Desktop\py\pythonProject>  <- текст в терминале будет примерно такой 
 ```
-![](data/Screenshot_1.png)
 ## Инструкция:
 1. Выбираем свой CAPEC 
 2. Выбираем необходимые CWE + компонент, вставляем в скрипт. Файл main.py (14 строчка) p.s. соблюдаем синтаксис и не забываем ставить ' ',
