@@ -11,6 +11,10 @@
 ```bash
 pip install -r requirements.txt
 ```
+ЖДЁМ ЗАВЕРШЕНИЯ УСТАНОВКИ! (В ТЕРМИНАЛ МОЖНО БУДЕТ ПИСАТЬ И БУДЕТ СИМВОЛ > )
+```bash
+(.venv) PS C:\Users\twentyoneh\Desktop\py\pythonProject>  <- текст в терминале будет примерно такой 
+```
 ![](data/Screenshot_1.png)
 ## Инструкция:
 1. Выбираем свой CAPEC 
