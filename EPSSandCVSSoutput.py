@@ -2,6 +2,7 @@ import pandas as pd
 import requests
 from cvss import CVSS2, CVSS3, CVSS4
 import OWAPS
+from docx import Document
 
 def fetch_epss_data(cve_id):
     """
@@ -44,6 +45,17 @@ def process_cve_data(input_excel, output_excel):
 
     # Создаем список для хранения результатов
     results = []
+    doc = Document()
+
+    doc.add_heading('Результаты анализа уязвимостей', level=1)
+
+    # Создаем таблицу с 5 столбцами
+    table = doc.add_table(rows=1, cols=5)
+    table.style = 'Table Grid'
+
+    headers = ['Уязвимость', 'Оценка CVSS 3.1', 'Оценка CVSS 4.0', 'Оценка EPSS', 'Оценка OWASP']
+    for i, header in enumerate(headers):
+        table.cell(0, i).text = header
 
     # Запрос данных для каждого CVE
     for index, row in df.iterrows():
@@ -70,11 +82,32 @@ def process_cve_data(input_excel, output_excel):
         }
         results.append(result_row)
 
+        data = {
+            'Уязвимость': cve_id,
+            'Оценка CVSS 3.1': cvss3_score.base_score,
+            'Оценка CVSS 4.0': cvss4_score.base_score,
+            'Оценка EPSS': epss_data.get('epss', None),
+            'Оценка OWASP': owaps_score,
+        }
+        row = table.add_row().cells
+        row[0].text = str(data['Уязвимость'])
+        row[1].text = str(data['Оценка CVSS 3.1'])
+        row[2].text = str(data['Оценка CVSS 4.0'])
+        row[3].text = str(data['Оценка EPSS'])
+        row[4].text = str(data['Оценка OWASP'])
+
+
+    output_file = './out/vulnerability_analysis.docx'
+    doc.save(output_file)
+
+    print(f"Документ успешно сохранен как {output_file}")
     # Преобразуем список результатов в DataFrame
     results_df = pd.DataFrame(results)
 
     # Сохраняем в новый Excel файл
     results_df.to_excel(output_excel, index=False)
     print(f"Результаты успешно сохранены в '{output_excel}'")
+
+
 
 
