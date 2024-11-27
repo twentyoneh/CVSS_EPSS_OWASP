@@ -1,6 +1,12 @@
 # CVSS && EPSS && OWAPS
 Скрипт для автоматизированной генерации exel таблиц с рассчитанными значениями CVSS3.1; CVSS4.0; EPSS; OWASP.
 
+Скачиваем данный репозиторий -> создаём новый проект в Python с виртуальным окружением .venv
+![](data/Screenshot_5.png)
+копируем всё содержимое папки CVSS_EPSS_OWASP
+![](data/Screenshot_6.png)
+в папку с нашем проектом
+![](data/Screenshot_7.png)
 Заходим в питон открываем терминал и вводим:
 ```bash
 pip install -r requirements.txt
