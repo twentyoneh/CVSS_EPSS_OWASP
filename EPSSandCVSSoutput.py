@@ -3,6 +3,16 @@ import requests
 from cvss import CVSS2, CVSS3, CVSS4
 import OWAPS
 from docx import Document
+import math  # Для расчёта корня
+
+def calculate_rms(values):
+    """
+    Вычисляет среднеквадратичное значение для нормализованных оценок.
+    :param values: Список нормализованных значений.
+    :return: Среднеквадратичное значение.
+    """
+    n = len(values)
+    return math.sqrt(sum(v**2 for v in values) / n) if n > 0 else 0
 
 def fetch_epss_data(cve_id):
     """
@@ -28,10 +38,25 @@ def fetch_epss_data(cve_id):
         return {}
 
 
+def normalize_score(s, smin, smax):
+    """
+    Нормализует значение оценки.
+    :param s: Оценка (может быть строкой или None)
+    :param smin: Минимальная оценка
+    :param smax: Максимальная оценка
+    :return: Нормализованная оценка
+    """
+    try:
+        s = float(s)  # Преобразуем значение в float
+        return (s - smin) / (smax - smin) if smax != smin else 0
+    except (ValueError, TypeError):
+        return 0  # Возвращаем 0 для некорректных или отсутствующих значений
+
+
 def process_cve_data(input_excel, output_excel):
     """
     Обрабатывает данные из входного Excel файла, вызывает API для каждого CVE
-    и сохраняет результаты в новый Excel файл.
+    и сохраняет результаты в новый Excel файл и Word-документ.
     """
     # Читаем входной Excel файл
     df = pd.read_excel(input_excel)
@@ -47,7 +72,7 @@ def process_cve_data(input_excel, output_excel):
     results = []
     doc = Document()
 
-    doc.add_heading('Результаты анализа уязвимостей', level=1)
+    doc.add_heading('Результаты анализа CVSS3.1, CVSS4.0, EPSS, OWASP', level=1)
 
     # Создаем таблицу с 5 столбцами
     table = doc.add_table(rows=1, cols=5)
@@ -57,22 +82,24 @@ def process_cve_data(input_excel, output_excel):
     for i, header in enumerate(headers):
         table.cell(0, i).text = header
 
+    # Переменные для нормализации
+    epss_min, epss_max = 0, 1
+    cvss_min, cvss_max = 0, 10
+
     # Запрос данных для каждого CVE
     for index, row in df.iterrows():
         cve_id = row['CVE_filtered']
 
         cvss4_score = CVSS4(row['CVSS4.0'])
-        cvss3_score = CVSS3( f"CVSS:3.0/{row['Unnamed: 11']}")
-        #тут дожен быть перевод из CVSS4 -> OWASP
-        #owaps_vector = OWAPS.create_vector()
+        cvss3_score = CVSS3(f"CVSS:3.0/{row['Unnamed: 11']}")
 
         epss_data = fetch_epss_data(cve_id)
         owaps_score = OWAPS.calculate_risk_owaps()
-        # Собираем данные в один словарь
+
         result_row = {
-            'CWE': row.get('Unnamed: 24', None),  # Замените на название столбца CWE
+            'CWE': row.get('Unnamed: 24', None),
             'CVE_filtered': cve_id,
-            'CVSS3.1': row.get('Unnamed: 11', None),  # Замените на название столбца CVSS 3.0
+            'CVSS3.1': row.get('Unnamed: 11', None),
             'CVSS4.0': row.get('CVSS4.0', None),
             'EPSS_Score': epss_data.get('epss', None),
             'EPSS_Percentile': epss_data.get('percentile', None),
@@ -96,6 +123,60 @@ def process_cve_data(input_excel, output_excel):
         row[3].text = str(data['Оценка EPSS'])
         row[4].text = str(data['Оценка OWASP'])
 
+    # Добавляем таблицу нормализованных значений
+    doc.add_paragraph()
+    doc.add_heading('Нормализованные оценки критичности уязвимостей', level=1)
+
+    norm_table = doc.add_table(rows=1, cols=5)
+    norm_table.style = 'Table Grid'
+
+    norm_headers = ['Уязвимость', 'Норм. CVSS 3.1', 'Норм. CVSS 4.0', 'Норм. EPSS', 'Норм. OWASP']
+    for i, header in enumerate(norm_headers):
+        norm_table.cell(0, i).text = header
+
+    for res in results:
+        # Нормализованные значения
+        norm_values = [
+            normalize_score(res['Calc CVSS3.1'], cvss_min, cvss_max),
+            normalize_score(res['Calc CVSS4.0'], cvss_min, cvss_max),
+            normalize_score(res.get('EPSS_Score', 0), epss_min, epss_max),
+            normalize_score(res['Calc OWAPS'], cvss_min, cvss_max)
+        ]
+
+        row = norm_table.add_row().cells
+        row[0].text = str(res['CVE_filtered'])
+        row[1].text = f"{norm_values[0]:.2f}"
+        row[2].text = f"{norm_values[1]:.2f}"
+        row[3].text = f"{norm_values[2]:.2f}"
+        row[4].text = f"{norm_values[3]:.2f}"
+
+    # Добавляем таблицу среднеквадратичных значений
+    doc.add_paragraph()
+    doc.add_heading('Среднеквадратичная оценка критичности уязвимостей', level=1)
+
+    rms_table = doc.add_table(rows=1, cols=2)
+    rms_table.style = 'Table Grid'
+
+    rms_headers = ['Уязвимость', 'Среднеквадратичная оценка']
+    for i, header in enumerate(rms_headers):
+        rms_table.cell(0, i).text = header
+
+    for res in results:
+        # Нормализованные значения
+        norm_values = [
+            normalize_score(res['Calc CVSS3.1'], cvss_min, cvss_max),
+            normalize_score(res['Calc CVSS4.0'], cvss_min, cvss_max),
+            normalize_score(res.get('EPSS_Score', 0), epss_min, epss_max),
+            normalize_score(res['Calc OWAPS'], cvss_min, cvss_max)
+        ]
+
+        # Среднеквадратичное значение
+        rms_score = calculate_rms(norm_values)
+
+        # Добавление строки в таблицу
+        row = rms_table.add_row().cells
+        row[0].text = str(res['CVE_filtered'])
+        row[1].text = f"{rms_score:.2f}"
 
     output_file = './out/vulnerability_analysis.docx'
     doc.save(output_file)
@@ -107,7 +188,3 @@ def process_cve_data(input_excel, output_excel):
     # Сохраняем в новый Excel файл
     results_df.to_excel(output_excel, index=False)
     print(f"Результаты успешно сохранены в '{output_excel}'")
-
-
-
-
