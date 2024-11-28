@@ -15,9 +15,9 @@ start_time = time.time()
 df = pd.read_excel(input_file)
 
 # Список целевых значений для поиска
-cwe_codes = ['CWE-494', 'CWE-1188', 'CWE-922']
+cwe_codes = ['CWE-732']
 
-komponent = 'Операционная система'
+komponent = 'Прикладное ПО информационных систем'
 
 # Создание паттерна для поиска в столбце 'Unnamed: 24'
 pattern = r'\b(?:' + '|'.join(cwe_codes) + r')\b'

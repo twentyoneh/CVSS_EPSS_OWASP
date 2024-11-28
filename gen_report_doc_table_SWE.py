@@ -9,8 +9,8 @@ def get_current(a):
 
 
 # Параметры файлов
-input_file = 'C:/Users/user/Desktop/Диплом/diplom/output_table.xlsx'  # Файл Excel с отфильтрованными данными
-output_file = 'C:/Users/user/Desktop/Диплом/diplom/vulnerabilities_report.docx'  # Имя выходного Word файла
+input_file = './input/output_table.xlsx'  # Файл Excel с отфильтрованными данными
+output_file = './out/CWE_output.docx'  # Имя выходного Word файла
 
 # Загрузка данных из Excel
 df = pd.read_excel(input_file)
@@ -22,7 +22,7 @@ doc = Document()
 # Для каждой строки создаем таблицу с данными
 for index, row in df.iterrows():
     # Добавляем заголовок таблицы
-    doc.add_paragraph(f'Таблица {index + 395} - Паспорт уязвимости {str(row.get('Unnamed: 18', 'Не указано'))}')
+    doc.add_paragraph(f'Таблица {index + 233} - Паспорт уязвимости {str(row.get('Unnamed: 18', 'Не указано'))}')
 
     # Создаем таблицу с 2 столбцами
     table = doc.add_table(rows=0, cols=2)
