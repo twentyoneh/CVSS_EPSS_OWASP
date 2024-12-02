@@ -186,7 +186,7 @@ def process_cve_data(input_excel, output_excel):
 
     # Теперь считаем вероятность успеха для каждой уязвимости
     doc.add_paragraph()
-    doc.add_heading('Вероятность успеха реализации единичной атаки', level=1)
+    doc.add_heading('Вероятность эксплуатации единичной уязвимости', level=1)
 
     success_table = doc.add_table(rows=1, cols=2)
     success_table.style = 'Table Grid'
