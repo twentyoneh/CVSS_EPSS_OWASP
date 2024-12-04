@@ -58,6 +58,7 @@ def process_cve_data(input_excel, output_excel):
     Обрабатывает данные из входного Excel файла, вызывает API для каждого CVE
     и сохраняет результаты в новый Excel файл и Word-документ.
     """
+    metric_values = {'N': 0, 'L': 0.2, 'H': 0.5}
     # Читаем входной Excel файл
     df = pd.read_excel(input_excel)
 
@@ -92,6 +93,12 @@ def process_cve_data(input_excel, output_excel):
 
         cvss4_score = CVSS4(row['CVSS4.0'])
         cvss3_score = CVSS3(f"CVSS:3.0/{row['Unnamed: 11']}")
+        metrics = cvss3_score.metrics
+        U_c = metric_values[metrics.get('C', 'N')]
+        U_i = metric_values[metrics.get('I', 'N')]
+        U_a = metric_values[metrics.get('A', 'N')]
+
+        impact_score = 1 - (1 - U_c) * (1 - U_i) * (1 - U_a)
 
         epss_data = fetch_epss_data(cve_id)
         owaps_score = OWAPS.calculate_risk_owaps()
@@ -106,6 +113,7 @@ def process_cve_data(input_excel, output_excel):
             'Calc CVSS3.1': cvss3_score.base_score,
             'Calc CVSS4.0': cvss4_score.base_score,
             'Calc OWAPS': owaps_score,
+            'Impact_Score': impact_score,
         }
         results.append(result_row)
 
@@ -134,6 +142,7 @@ def process_cve_data(input_excel, output_excel):
     for i, header in enumerate(norm_headers):
         norm_table.cell(0, i).text = header
 
+    norm_values_list = []
     for res in results:
         # Нормализованные значения
         norm_values = [
@@ -147,8 +156,10 @@ def process_cve_data(input_excel, output_excel):
         row[0].text = str(res['CVE_filtered'])
         row[1].text = f"{norm_values[0]:.2f}"
         row[2].text = f"{norm_values[1]:.2f}"
-        row[3].text = f"{norm_values[2]:.2f}"
+        row[3].text = f"{norm_values[2]:.5f}"
         row[4].text = f"{norm_values[3]:.2f}"
+
+        norm_values_list.append(norm_values)
 
     # Добавляем таблицу среднеквадратичных значений
     doc.add_paragraph()
@@ -161,6 +172,7 @@ def process_cve_data(input_excel, output_excel):
     for i, header in enumerate(rms_headers):
         rms_table.cell(0, i).text = header
 
+    rms_values = []
     for res in results:
         # Нормализованные значения
         norm_values = [
@@ -177,6 +189,31 @@ def process_cve_data(input_excel, output_excel):
         row = rms_table.add_row().cells
         row[0].text = str(res['CVE_filtered'])
         row[1].text = f"{rms_score:.2f}"
+
+        rms_values.append(rms_score)
+
+    # Теперь считаем вероятность успеха для каждой уязвимости
+    doc.add_paragraph()
+    doc.add_heading('Вероятность успеха реализации единичной атаки', level=1)
+
+    success_table = doc.add_table(rows=1, cols=2)
+    success_table.style = 'Table Grid'
+
+    success_headers = ['Уязвимость', 'Вероятность успеха']
+    for i, header in enumerate(success_headers):
+        success_table.cell(0, i).text = header
+
+    for rms_score in rms_values:
+        # Суммируем все среднеквадратичные значения
+        total_rms_score = sum(rms_values)
+
+        # Рассчитываем вероятность успеха для каждой уязвимости
+        success_probability = rms_score / total_rms_score
+
+        # Добавляем строку в таблицу
+        row = success_table.add_row().cells
+        row[0].text = str(results[rms_values.index(rms_score)]['CVE_filtered'])
+        row[1].text = f"{success_probability:.5f}"
 
     output_file = './out/vulnerability_analysis.docx'
     doc.save(output_file)
