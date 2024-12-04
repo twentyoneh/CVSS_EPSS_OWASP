@@ -209,8 +209,36 @@ def process_cve_data(input_excel, output_excel):
         row = success_table.add_row().cells
         row[0].text = str(results[rms_values.index(rms_score)]['CVE_filtered'])
         row[1].text = f"{success_probability:.5f}"
-    output_file = './out/vulnerability_analysis.docx'
-    doc.save(output_file)
+
+
+    # Теперь добавляем таблицу с рисками
+    doc.add_paragraph()
+    doc.add_heading('Расчёт риска', level=1)
+    risks_table = doc.add_table(rows=1, cols=3)
+    risks_table.style = 'Table Grid'
+
+    # Заголовки для таблицы "риски"
+    risks_headers = ['Уязвимость', 'Ущерб', 'Риск']
+    for i, header in enumerate(risks_headers):
+        risks_table.cell(0, i).text = header
+
+    for res, rms_score in zip(results, rms_values):
+        # Рассчитываем вероятность успеха
+        total_rms_score = sum(rms_values)
+        success_probability = rms_score / total_rms_score
+
+        # Расчёт риска
+        impact_score = res['Impact_Score']
+        risk = impact_score * success_probability
+
+        # Добавляем строку в таблицу
+        row = risks_table.add_row().cells
+        row[0].text = str(res['CVE_filtered'])
+        row[1].text = f"{impact_score:.5f}"
+        row[2].text = f"{risk:.5f}"
+
+        output_file = './out/vulnerability_analysis.docx'
+        doc.save(output_file)
 
     print(f"Документ успешно сохранен как {output_file}")
     # Преобразуем список результатов в DataFrame
