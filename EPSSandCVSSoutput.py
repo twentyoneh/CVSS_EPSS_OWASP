@@ -64,7 +64,7 @@ def process_cve_data(input_excel, output_excel):
 
     # Проверяем наличие столбца с CVE
     if 'CVE_filtered' not in df.columns:
-        raise ValueError("Ожидается столбец 'CVE_filtered' в файле!")
+       raise ValueError("Ожидается столбец 'CVE_filtered' в файле!")
 
     # Убираем строки без CVE
     df = df.dropna(subset=['CVE_filtered'])
@@ -169,11 +169,14 @@ def process_cve_data(input_excel, output_excel):
     rms_table = doc.add_table(rows=1, cols=2)
     rms_table.style = 'Table Grid'
 
+    # Добавление таблицы со среднеквадратичной оценкой
     rms_headers = ['Уязвимость', 'Среднеквадратичная оценка']
     for i, header in enumerate(rms_headers):
         rms_table.cell(0, i).text = header
 
     rms_values = []
+    criticality_values = []  # Список для хранения критичностей
+
     for res in results:
         # Нормализованные значения
         norm_values = [
@@ -185,14 +188,22 @@ def process_cve_data(input_excel, output_excel):
 
         # Среднеквадратичное значение
         rms_score = calculate_rms(norm_values)
+        rms_values.append(rms_score)
+
+        # Определение критичности (например, на основе CVSS3.1)
+        criticality = float(res['Calc CVSS3.1'])  # Предположим, что это оценка критичности
+
 
         # Добавление строки в таблицу
         row = rms_table.add_row().cells
         row[0].text = str(res['CVE_filtered'])
-        row[1].text = f"{rms_score:.2f}"
+        row[1].text = f"{rms_score:.5f}"
+        criticality_values.append(rms_score)
 
-        rms_values.append(rms_score)
-    # Теперь считаем вероятность успеха для каждой уязвимости
+    # Рассчитаем общую критичность
+    total_criticality = sum(criticality_values)
+
+    # Добавляем вероятности успеха
     doc.add_paragraph()
     doc.add_heading('Вероятность эксплуатации единичной уязвимости', level=1)
     success_table = doc.add_table(rows=1, cols=2)
@@ -200,18 +211,15 @@ def process_cve_data(input_excel, output_excel):
     success_headers = ['Уязвимость', 'Вероятность успеха']
     for i, header in enumerate(success_headers):
         success_table.cell(0, i).text = header
-    for rms_score in rms_values:
-        # Суммируем все среднеквадратичные значения
-        total_rms_score = sum(rms_values)
+    for i, rms_score in enumerate(rms_values):
         # Рассчитываем вероятность успеха для каждой уязвимости
-        success_probability = rms_score / total_rms_score
+        success_probability = criticality_values[i] / total_criticality
         # Добавляем строку в таблицу
         row = success_table.add_row().cells
-        row[0].text = str(results[rms_values.index(rms_score)]['CVE_filtered'])
+        row[0].text = str(results[i]['CVE_filtered'])
         row[1].text = f"{success_probability:.5f}"
 
-
-    # Теперь добавляем таблицу с рисками
+    # Добавляем таблицу с рисками
     doc.add_paragraph()
     doc.add_heading('Расчёт риска', level=1)
     risks_table = doc.add_table(rows=1, cols=3)
@@ -236,6 +244,8 @@ def process_cve_data(input_excel, output_excel):
         row[0].text = str(res['CVE_filtered'])
         row[1].text = f"{impact_score:.5f}"
         row[2].text = f"{risk:.5f}"
+
+
 
         output_file = './out/vulnerability_analysis.docx'
         doc.save(output_file)

@@ -22,7 +22,7 @@ doc = Document()
 # Для каждой строки создаем таблицу с данными
 for index, row in df.iterrows():
     # Добавляем заголовок таблицы
-    doc.add_paragraph(f'Таблица {index + 233} - Паспорт уязвимости {str(row.get('Unnamed: 18', 'Не указано'))}')
+    doc.add_paragraph(f'Таблица А{index + 109} - Паспорт уязвимости {str(row.get('Unnamed: 18', 'Не указано'))}')
 
     # Создаем таблицу с 2 столбцами
     table = doc.add_table(rows=0, cols=2)
